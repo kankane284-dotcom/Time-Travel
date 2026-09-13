@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Timeline-Based Re-Experience</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #070914;
+            color: #e8eaf6;
+            line-height: 1.7;
+        }
+
+        /* Background glow */
+        body::before {
+            content: "";
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            background: #6c63ff;
+            filter: blur(180px);
+            opacity: 0.12;
+            top: -200px;
+            left: -200px;
+            z-index: -1;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            background: #00d9ff;
+            filter: blur(180px);
+            opacity: 0.08;
+            bottom: -200px;
+            right: -150px;
+            z-index: -1;
+        }
+
+        /* NAVBAR */
+
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+
+            backdrop-filter: blur(15px);
+            background: rgba(7, 9, 20, 0.75);
+
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+
+            padding: 18px 8%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-weight: bold;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        .logo span {
+            color: #8178ff;
+        }
+
+        nav a {
+            color: #aaaec5;
+            text-decoration: none;
+            margin-left: 25px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        nav a:hover {
+            color: white;
+        }
+
+        /* HERO */
+
+        .hero {
+            min-height: 90vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .hero-content {
+            max-width: 950px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 7px 15px;
+            border: 1px solid rgba(129,120,255,0.4);
+            border-radius: 50px;
+            color: #a9a3ff;
+            background: rgba(129,120,255,0.08);
+            font-size: 13px;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            font-size: clamp(42px, 7vw, 82px);
+            line-height: 1.05;
+            letter-spacing: -3px;
+            margin-bottom: 25px;
+
+            background: linear-gradient(
+                90deg,
+                #ffffff,
+                #aaa4ff,
+                #62dcff
+            );
+
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            max-width: 720px;
+            margin: auto;
+            color: #9da2bd;
+            font-size: 18px;
+        }
+
+        .scroll {
+            margin-top: 50px;
+            color: #777b96;
+            font-size: 13px;
+        }
+
+        /* MAIN */
+
+        main {
+            max-width: 1050px;
+            margin: auto;
+            padding: 40px 20px 100px;
+        }
+
+        section {
+            margin-bottom: 110px;
+        }
+
+        .section-label {
+            color: #8178ff;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 38px;
+            margin-bottom: 25px;
+            letter-spacing: -1px;
+        }
+
+        h3 {
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+
+        p {
+            color: #aeb2c8;
+            margin-bottom: 18px;
+        }
+
+        /* CARDS */
+
+        .card {
+            background: rgba(255,255,255,0.035);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 25px;
+
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(129,120,255,0.35);
+        }
+
+        /* TIMELINE */
+
+        .timelines {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-top: 35px;
+        }
+
+        .timeline {
+            padding: 30px;
+            border-radius: 20px;
+            background: linear-gradient(
+                145deg,
+                rgba(129,120,255,0.1),
+                rgba(255,255,255,0.025)
+            );
+
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .timeline h3 {
+            color: #aaa4ff;
+        }
+
+        .timeline-line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .event {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.07);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .arrow {
+            color: #8178ff;
+        }
+
+        /* BIG IDEA */
+
+        .big-idea {
+            text-align: center;
+            padding: 55px 30px;
+            border-radius: 25px;
+
+            background:
+                radial-gradient(
+                    circle at center,
+                    rgba(129,120,255,0.16),
+                    transparent 65%
+                );
+
+            border: 1px solid rgba(129,120,255,0.2);
+        }
+
+        .big-idea p {
+            font-size: 25px;
+            color: white;
+            font-weight: 500;
+            max-width: 800px;
+            margin: auto;
+        }
+
+        /* MECHANISM */
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .step {
+            padding: 25px;
+            border-radius: 18px;
+            background: rgba(255,255,255,0.035);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .number {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 50%;
+            background: #8178ff;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        /* QUESTION */
+
+        .question {
+            padding: 50px;
+            border-radius: 25px;
+
+            background: linear-gradient(
+                135deg,
+                rgba(129,120,255,0.12),
+                rgba(0,217,255,0.06)
+            );
+
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .question blockquote {
+            font-size: 27px;
+            color: white;
+            font-weight: 500;
+            border-left: 3px solid #8178ff;
+            padding-left: 25px;
+            margin-top: 25px;
+        }
+
+        /* LIST */
+
+        .requirements {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .requirement {
+            padding: 15px 18px;
+            background: rgba(255,255,255,0.035);
+            border-radius: 10px;
+            color: #b7bad0;
+        }
+
+        .requirement::before {
+            content: "✓";
+            color: #8178ff;
+            margin-right: 10px;
+        }
+
+        /* WARNING */
+
+        .warning {
+            margin-top: 35px;
+            padding: 25px;
+            border-radius: 15px;
+            background: rgba(255,180,70,0.05);
+            border: 1px solid rgba(255,180,70,0.2);
+        }
+
+        .warning strong {
+            color: #ffc66d;
+        }
+
+        /* FOOTER */
+
+        footer {
+            text-align: center;
+            padding: 50px 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            color: #676b83;
+            font-size: 13px;
+        }
+
+        /* MOBILE */
+
+        @media (max-width: 700px) {
+
+            nav {
+                padding: 15px 5%;
+            }
+
+            nav div:last-child {
+                display: none;
+            }
+
+            .timelines,
+            .steps,
+            .requirements {
+                grid-template-columns: 1fr;
+            }
+
+            h2 {
+                font-size: 30px;
+            }
+
+            .question {
+                padding: 30px 20px;
+            }
+
+            .question blockquote {
+                font-size: 21px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVIGATION -->
+
+    <nav>
+        <div class="logo">
+            <span>◈</span> TIME / HYPOTHESIS
+        </div>
+
+        <div>
+            <a href="#idea">Core Idea</a>
+            <a href="#mechanism">Mechanism</a>
+            <a href="#question">Question</a>
+        </div>
+    </nav>
+
+
+    <!-- HERO -->
+
+    <header class="hero">
+
+        <div class="hero-content">
+
+            <div class="badge">
+                SPECULATIVE PHYSICS • TIME • IDENTITY
+            </div>
+
+            <h1>
+                Timeline-Based<br>
+                Re-Experience
+            </h1>
+
+            <p>
+                A speculative hypothesis exploring whether a person's
+                past could be experienced again—not by reversing time,
+                but by reaching another timeline containing a sufficiently
+                similar history.
+            </p>
+
+            <div class="scroll">
+                ↓ Explore the hypothesis
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <main>
+
+        <!-- CORE IDEA -->
+
+        <section id="idea">
+
+            <div class="section-label">01 — Core Idea</div>
+
+            <h2>
+                What if the past doesn't need to be reversed?
+            </h2>
+
+            <p>
+                The universe contains an enormous number of galaxies,
+                stars, planets, and physical systems. If sufficiently many
+                independent systems exist, similar conditions—and potentially
+                similar life histories—might arise more than once.
+            </p>
+
+            <div class="big-idea">
+
+                <p>
+                    A person's past might be reproducible in another
+                    timeline or universe without requiring an
+                    atom-for-atom identical copy.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- TIMELINES -->
+
+        <section>
+
+            <div class="section-label">02 — The Comparison</div>
+
+            <h2>Two timelines. One corresponding history.</h2>
+
+            <div class="timelines">
+
+                <div class="timeline">
+
+                    <h3>Timeline A</h3>
+
+                    <div class="timeline-line">
+
+                        <span class="event">Unish</span>
+                        <span class="arrow">→</span>
+                        <span class="event">Childhood</span>
+                        <span class="arrow">→</span>
+                        <span class="event">School</span>
+                        <span class="arrow">→</span>
+                        <span class="event">Decisions</span>
+                        <span class="arrow">→</span>
+                        <span class="event">Present</span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="timeline">
+
+                    <h3>Timeline B</h3>
+
+                    <div class="timeline-line">
+
+                        <span class="event">Counterpart</span>
+                        <span class="arrow">→</span>
+                        <span class="event">Similar childhood</span>
+                        <span class="arrow">→</span>
+                        <span class="event">Similar school</span>
+                        <span class="arrow">→</span>
+                        <span class="event">Similar decisions</span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- MECHANISM -->
+
+        <section id="mechanism">
+
+            <div class="section-label">03 — Proposed Mechanism</div>
+
+            <h2>
+                Re-experiencing the past through another timeline
+            </h2>
+
+            <p>
+                Imagine that multiple timelines or universes exist and,
+                hypothetically, some mechanism allows an observer to move
+                between them.
+            </p>
+
+
+            <div class="steps">
+
+                <div class="step">
+
+                    <div class="number">1</div>
+
+                    <h3>Departure</h3>
+
+                    <p>
+                        An observer begins in Timeline A at their present.
+                    </p>
+
+                </div>
+
+
+                <div class="step">
+
+                    <div class="number">2</div>
+
+                    <h3>Transition</h3>
+
+                    <p>
+                        A hypothetical mechanism allows movement to
+                        another physically existing timeline.
+                    </p>
+
+                </div>
+
+
+                <div class="step">
+
+                    <div class="number">3</div>
+
+                    <h3>Arrival</h3>
+
+                    <p>
+                        The observer arrives at a state corresponding
+                        to their own childhood or past.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <h3>
+                    The key difference
+                </h3>
+
+                <p>
+                    The original timeline does not need to run backward.
+                    Instead, the traveler encounters another history that
+                    reproduces enough of the original circumstances to
+                    resemble the past.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- DEFINITION -->
+
+        <section>
+
+            <div class="section-label">04 — Interpretation</div>
+
+            <h2>
+                A different definition of time travel
+            </h2>
+
+            <div class="big-idea">
+
+                <p>
+                    Past re-experience =
+                    <br><br>
+                    <strong>
+                        Travel to another timeline
+                        +
+                        arrival at a state corresponding to one's past
+                    </strong>
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- REQUIREMENTS -->
+
+        <section>
+
+            <div class="section-label">05 — What is actually required?</div>
+
+            <h2>
+                Not an identical copy
+            </h2>
+
+            <p>
+                The hypothesis does not necessarily require a perfect
+                duplication of the original person or universe.
+            </p>
+
+            <div class="requirements">
+
+                <div class="requirement">
+                    An exact biological clone
+                </div>
+
+                <div class="requirement">
+                    Identical atoms
+                </div>
+
+                <div class="requirement">
+                    An identical universe
+                </div>
+
+                <div class="requirement">
+                    An identical philosophical identity
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <h3>
+                    Instead...
+                </h3>
+
+                <p>
+                    It requires another physical history capable of
+                    reproducing enough of the relevant initial conditions,
+                    circumstances, and subsequent events that the resulting
+                    life becomes substantially—or perhaps extremely—similar.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- KEY QUESTION -->
+
+        <section id="question">
+
+            <div class="section-label">06 — The Central Question</div>
+
+            <div class="question">
+
+                <h2>
+                    The question changes.
+                </h2>
+
+                <p>
+                    Perhaps the problem is not simply whether humans can
+                    travel backward through time.
+                </p>
+
+                <blockquote>
+                    “Could another physically existing timeline contain a
+                    sufficiently similar realization of our past, and could
+                    information, matter, or an observer travel between those
+                    timelines?”
+                </blockquote>
+
+            </div>
+
+        </section>
+
+
+        <!-- SCIENCE -->
+
+        <section>
+
+            <div class="section-label">07 — Scientific Status</div>
+
+            <h2>
+                Interesting. But speculative.
+            </h2>
+
+            <p>
+                At present, there is no established evidence that humans can
+                access or travel between parallel timelines. The existence
+                and accessibility of such timelines remain speculative.
+            </p>
+
+            <div class="warning">
+
+                <strong>⚠ Speculative hypothesis</strong>
+
+                <p>
+                    This concept should not be treated as an established
+                    scientific theory or demonstrated mechanism of
+                    time travel.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- FIELDS -->
+
+        <section>
+
+            <div class="section-label">08 — Connected Questions</div>
+
+            <h2>
+                Where does this idea lead?
+            </h2>
+
+            <div class="steps">
+
+                <div class="step">
+                    <h3>Cosmology</h3>
+                    <p>
+                        How many physically existing universes or regions
+                        could exist?
+                    </p>
+                </div>
+
+                <div class="step">
+                    <h3>Quantum Theory</h3>
+                    <p>
+                        Could interpretations involving branching histories
+                        provide a useful conceptual framework?
+                    </p>
+                </div>
+
+                <div class="step">
+                    <h3>Identity</h3>
+                    <p>
+                        If another person lived your history, in what sense
+                        would they be “you”?
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+
+        Timeline-Based Re-Experience of the Past
+
+        <br>
+
+        A speculative exploration of time, identity, probability,
+        and possible timelines.
+
+    </footer>
+
+</body>
+</html>
